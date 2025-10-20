@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Candy Crush</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+        }
+
+        .sidebar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            min-width: 250px;
+        }
+
+        .stat {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .game-section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(8, 60px);
+            gap: 3px;
+            background: #333;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .grid div {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            cursor: grab;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            transition: transform 0.1s;
+            border: 2px solid rgba(0, 0, 0, 0.2);
+            font-size: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .grid div:hover {
+            transform: scale(1.05);
+        }
+
+        .grid div:active {
+            cursor: grabbing;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-direction: column;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .combo-display {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+            color: #ff6b6b;
+            display: none;
+        }
+
+        .combo-display.active {
+            display: block;
+            animation: pulse 0.6s;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .level-info {
+            background: #e8f5e9;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #2e7d32;
+        }
+
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .game-over.active {
+            display: flex;
+        }
+
+        .game-over-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-over-content h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .game-over-content p {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .game-over-content button {
+            margin-top: 20px;
+            padding: 15px 30px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="stat">
+                <div class="stat-label">Score</div>
+                <div class="stat-value" id="score">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Level</div>
+                <div class="stat-value" id="level">1</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Moves Left</div>
+                <div class="stat-value" id="moves">30</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Combo Chain</div>
+                <div class="stat-value" id="combo">0x</div>
+            </div>
+            <div class="controls">
+                <button class="btn-primary" onclick="resetGame()">New Game</button>
+                <button class="btn-secondary" onclick="undoMove()">Undo Move</button>
+                <button class="btn-secondary" onclick="togglePause()">Pause</button>
+            </div>
+        </div>
+
+        <div class="game-section">
+            <div class="level-info" id="levelInfo">Level 1 - Match 3+ Candies!</div>
+            <div class="grid" id="grid"></div>
+            <div class="combo-display" id="comboDisplay"></div>
+        </div>
+    </div>
+
+    <div class="game-over" id="gameOverModal">
+        <div class="game-over-content">
+            <h2 id="gameOverTitle">Game Over!</h2>
+            <p>Final Score: <strong id="finalScore">0</strong></p>
+            <p>Level Reached: <strong id="finalLevel">1</strong></p>
+            <button class="btn-primary" onclick="resetGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const CANDY_TYPES = 6;
+        const GRID_WIDTH = 8;
+        const GRID_HEIGHT = 8;
+        const SYMBOLS = ['❤️', '💕', '💖', '🌹', '💝', '🎀'];
+        const COLORS = ['#FF1744', '#FF6B9D', '#FF69B4', '#FF1493', '#FFB6C1', '#FFC0CB'];
+        
+        let gameState = {
+            grid: [],
+            score: 0,
+            level: 1,
+            moves: 30,
+            combo: 0,
+            isPaused: false,
+            history: [],
+            lastComboClear: 0
+        };
+
+        let dragState = {
+            startId: null,
+            color: null
+        };
+
+        function initGame() {
+            gameState.score = 0;
+            gameState.level = 1;
+            gameState.moves = 30;
+            gameState.combo = 0;
+            gameState.history = [];
+            gameState.isPaused = false;
+
+            document.getElementById('gameOverModal').classList.remove('active');
+            createBoard();
+            removeInitialMatches();
+            updateUI();
+        }
+
+        function createBoard() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            gameState.grid = [];
+
+            for (let i = 0; i < GRID_WIDTH * GRID_HEIGHT; i++) {
+                const colorIndex = Math.floor(Math.random() * CANDY_TYPES);
+                gameState.grid.push(colorIndex);
+
+                const square = document.createElement('div');
+                square.id = i;
+                square.draggable = true;
+                square.style.backgroundColor = COLORS[colorIndex];
+
+                square.addEventListener('dragstart', dragStart);
+                square.addEventListener('dragend', dragEnd);
+                square.addEventListener('dragover', dragOver);
+                square.addEventListener('drop', dragDrop);
+
+                grid.appendChild(square);
+            }
+        }
+
+        function removeInitialMatches() {
+            let hasMatches = true;
+            while (hasMatches) {
+                hasMatches = false;
+                checkMatches();
+                if (gameState.lastComboClear > 0) {
+                    hasMatches = true;
+                    gameState.lastComboClear = 0;
+                    dropCandies();
+                }
+            }
+        }
+
+        function dragStart(e) {
+            if (gameState.isPaused) return;
+            dragState.startId = parseInt(this.id);
+            dragState.color = gameState.grid[dragState.startId];
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function dragOver(e) {
+            e.preventDefault();
+        }
+
+        function dragDrop(e) {
+            e.preventDefault();
+            if (gameState.isPaused) return;
+
+            const endId = parseInt(this.id);
+            const isValidMove = isAdjacent(dragState.startId, endId);
+
+            if (isValidMove) {
+                gameState.history.push([...gameState.grid]);
+                swapCandies(dragState.startId, endId);
+                gameState.moves--;
+                
+                if (checkMatches()) {
+                    gameState.combo = 0;
+                } else {
+                    swapCandies(dragState.startId, endId);
+                }
+
+                updateUI();
+                checkGameStatus();
+            }
+        }
+
+        function dragEnd(e) {}
+
+        function isAdjacent(id1, id2) {
+            const validMoves = [
+                id1 - 1, id1 + 1,
+                id1 - GRID_WIDTH, id1 + GRID_WIDTH
+            ];
+            return validMoves.includes(id2) && !isBoundaryIssue(id1, id2);
+        }
+
+        function isBoundaryIssue(id1, id2) {
+            const row1 = Math.floor(id1 / GRID_WIDTH);
+            const row2 = Math.floor(id2 / GRID_WIDTH);
+            return Math.abs(row1 - row2) > 1;
+        }
+
+        function swapCandies(id1, id2) {
+            const temp = gameState.grid[id1];
+            gameState.grid[id1] = gameState.grid[id2];
+            gameState.grid[id2] = temp;
+            renderBoard();
+        }
+
+        function checkMatches() {
+            const toRemove = new Set();
+
+            for (let i = 0; i < GRID_WIDTH * GRID_HEIGHT; i++) {
+                const matches = getMatches(i);
+                matches.forEach(id => toRemove.add(id));
+            }
+
+            if (toRemove.size > 0) {
+                const matchCount = toRemove.size;
+                const baseScore = matchCount === 3 ? 10 : matchCount === 4 ? 25 : 50;
+                gameState.combo++;
+                gameState.score += baseScore * gameState.combo;
+
+                showComboMessage();
+                toRemove.forEach(id => gameState.grid[id] = -1);
+                gameState.lastComboClear = toRemove.size;
+                dropCandies();
+                return true;
+            }
+
+            gameState.combo = 0;
+            return false;
+        }
+
+        function getMatches(id) {
+            const matches = [];
+            const color = gameState.grid[id];
+            if (color === -1) return matches;
+
+            const row = Math.floor(id / GRID_WIDTH);
+            const col = id % GRID_WIDTH;
+
+            // Horizontal
+            let start = col;
+            while (start > 0 && gameState.grid[row * GRID_WIDTH + start - 1] === color) start--;
+            let count = 0;
+            while (start < GRID_WIDTH && gameState.grid[row * GRID_WIDTH + start] === color) {
+                count++;
+                start++;
+            }
+            if (count >= 3) {
+                for (let i = 0; i < count; i++) {
+                    matches.push(row * GRID_WIDTH + col - (Math.floor(id % GRID_WIDTH) - start + i + count - 1));
+                }
+            }
+
+            // Vertical
+            let startRow = row;
+            while (startRow > 0 && gameState.grid[(startRow - 1) * GRID_WIDTH + col] === color) startRow--;
+            count = 0;
+            let tempRow = startRow;
+            while (tempRow < GRID_HEIGHT && gameState.grid[tempRow * GRID_WIDTH + col] === color) {
+                count++;
+                tempRow++;
+            }
+            if (count >= 3) {
+                for (let i = 0; i < count; i++) {
+                    matches.push((startRow + i) * GRID_WIDTH + col);
+                }
+            }
+
+            return matches;
+        }
+
+        function dropCandies() {
+            for (let col = 0; col < GRID_WIDTH; col++) {
+                let write = GRID_HEIGHT - 1;
+                for (let row = GRID_HEIGHT - 1; row >= 0; row--) {
+                    if (gameState.grid[row * GRID_WIDTH + col] !== -1) {
+                        gameState.grid[write * GRID_WIDTH + col] = gameState.grid[row * GRID_WIDTH + col];
+                        if (write !== row) gameState.grid[row * GRID_WIDTH + col] = -1;
+                        write--;
+                    }
+                }
+                for (let row = write; row >= 0; row--) {
+                    gameState.grid[row * GRID_WIDTH + col] = Math.floor(Math.random() * CANDY_TYPES);
+                }
+            }
+            renderBoard();
+
+            if (checkMatches()) {
+                setTimeout(() => dropCandies(), 200);
+            }
+        }
+
+        function renderBoard() {
+            for (let i = 0; i < GRID_WIDTH * GRID_HEIGHT; i++) {
+                const square = document.getElementById(i);
+                const color = gameState.grid[i];
+                square.style.backgroundColor = color === -1 ? '#fff0f5' : COLORS[color];
+                square.textContent = color === -1 ? '' : SYMBOLS[color];
+            }
+        }
+
+        function showComboMessage() {
+            if (gameState.combo > 1) {
+                const comboDisplay = document.getElementById('comboDisplay');
+                comboDisplay.textContent = `COMBO x${gameState.combo}! +${gameState.combo * 10} Points!`;
+                comboDisplay.classList.add('active');
+                setTimeout(() => comboDisplay.classList.remove('active'), 600);
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('score').textContent = gameState.score;
+            document.getElementById('level').textContent = gameState.level;
+            document.getElementById('moves').textContent = gameState.moves;
+            document.getElementById('combo').textContent = gameState.combo + 'x';
+            document.getElementById('levelInfo').textContent = `Level ${gameState.level} - Moves: ${gameState.moves}`;
+        }
+
+        function checkGameStatus() {
+            if (gameState.moves <= 0) {
+                gameState.level = Math.floor(gameState.score / 500) + 1;
+                showGameOver();
+            }
+        }
+
+        function showGameOver() {
+            document.getElementById('gameOverModal').classList.add('active');
+            document.getElementById('finalScore').textContent = gameState.score;
+            document.getElementById('finalLevel').textContent = gameState.level;
+        }
+
+        function resetGame() {
+            initGame();
+        }
+
+        function undoMove() {
+            if (gameState.history.length > 0) {
+                gameState.grid = gameState.history.pop();
+                gameState.moves++;
+                renderBoard();
+                updateUI();
+            }
+        }
+
+        function togglePause() {
+            gameState.isPaused = !gameState.isPaused;
+            const btn = event.target;
+            btn.textContent = gameState.isPaused ? 'Resume' : 'Pause';
+            btn.style.background = gameState.isPaused ? '#ff6b6b' : '';
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
